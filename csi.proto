@@ -36,7 +36,10 @@ service Controller {
     returns (GetCapacityResponse) {}
 
   rpc ControllerGetCapabilities (ControllerGetCapabilitiesRequest)
-    returns (ControllerGetCapabilitiesResponse) {}  
+    returns (ControllerGetCapabilitiesResponse) {}
+
+  rpc ControllerExpandVolume (ControllerExpandVolumeRequest)
+    returns (ControllerExpandVolumeResponse) {}
 }
 
 service Node {
@@ -57,7 +60,11 @@ service Node {
 
   rpc NodeGetCapabilities (NodeGetCapabilitiesRequest)
     returns (NodeGetCapabilitiesResponse) {}
+
+  rpc NodeExpandVolume(NodeExpandVolumeRequest)
+    returns (NodeExpandVolumeResponse) {}
 }
+
 message GetPluginInfoRequest {
 }
 
@@ -492,6 +499,7 @@ message ControllerServiceCapability {
       PUBLISH_UNPUBLISH_VOLUME = 2;
       LIST_VOLUMES = 3;
       GET_CAPACITY = 4;
+      EXPAND_VOLUME = 5;
     }
 
     Type type = 1;
@@ -502,6 +510,34 @@ message ControllerServiceCapability {
     RPC rpc = 1;
   }
 }
+
+message ControllerExpandVolumeRequest {
+  // The ID of the volume to expand. This field is REQUIRED
+  string volume_id = 1;
+
+  // the current capacity of the volume in bytes.
+  // This field is OPTIONAL
+  int64 current_capacity_bytes = 2;
+
+  // This field is REQUIRED. This allows CO to specify the
+  // capacity requirements of the volume after expansion
+  CapacityRange capacity_range = 3;
+
+  // Secrets required by the plugin for expanding the volume.
+  // This field is OPTIONAL
+  map<string,string> controller_volume_expand_secrets = 4;
+}
+
+message ControllerExpandVolumeResponse {
+  // Capacity of volume after expansion
+  // REQUIRED
+  int64 capacity_bytes = 2;
+
+  // Whether file system expansion is required for the volume
+  // REQUIRED
+  bool fs_resize_required = 3;
+}
+
 message NodeStageVolumeRequest {
   // The ID of the volume to publish. This field is REQUIRED.
   string volume_id = 1;
@@ -635,6 +671,25 @@ message NodeUnpublishVolumeRequest {
   string target_path = 2;
 }
 
+message NodeExpandVolumeRequest {
+  // The ID of the volume. This field is REQUIRED
+  string volume_id = 1;
+
+  // the current capacity of the volume in bytes.
+  // This field is OPTIONAL
+  int64 current_capacity_bytes = 2;
+
+  // This field is OPTIONAL. This allows CO to specify the
+  // capacity requirements of the volume after expansion
+  CapacityRange capacity_range = 3;
+}
+
+message NodeExpandVolumeResponse {
+  // the capacity of the volume in bytes.
+  // This field is OPTIONAL
+  int64 capacity_bytes = 1;
+}
+
 message NodeUnpublishVolumeResponse {
 }
 message NodeGetIdRequest {
@@ -661,6 +716,7 @@ message NodeServiceCapability {
     enum Type {
       UNKNOWN = 0;
       STAGE_UNSTAGE_VOLUME = 1;
+      EXPAND_VOLUME = 2;
     }
 
     Type type = 1;
